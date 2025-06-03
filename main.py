@@ -13,6 +13,7 @@ from time import sleep
 cpath = os.getcwd()
 out_file = os.path.join(cpath, "cobol_file.py")
 pos_ans = 'YES'
+cobol_text = ''
 
 # Define Functions
 
@@ -29,10 +30,16 @@ def getFileFromUser():
         return file_name
     else:
         return (file_name + '.cob')
+    
+def read_cobol_file(in_file):
+    global cobol_text
+    with open(in_file) as f:
+        cobol_text = f.read()
 
 # Execute Program
 
 if __name__ == "__main__":
     in_file = getFileFromUser()
-    print(in_file)
-    sleep(5) # Testing only. Remove later.
+    read_cobol_file(in_file=in_file)
+    print(cobol_text)
+    sleep(25) # Testing only. Remove later.
