@@ -14,7 +14,11 @@ from time import sleep
 cpath = os.getcwd()
 pos_ans = 'YES'
 cobol_text = ''
-cobol_commands = pd.DataFrame()
+cobol_ls = [] # Maybe? 
+program_id = ''
+working_storage_section = []
+procedure_division = []
+
 
 # Define Functions
 
@@ -46,12 +50,24 @@ def read_cobol_file(in_file):
 
 def parseCobol():
     global cobol_text
-    cobol_list = cobol_text.split('.')
-    return cobol_list
+    global cobol_ls
+    cobol_ls = cobol_text.split('.')
 
 def getProgramName():
     global cobol_commands
 
+def cleanCobolLs():
+    global cobol_ls
+    cobol_ls = [x.lstrip() for x in cobol_ls]
+    cobol_ls = list(filter(None, cobol_ls))
+
+def getProgramName():
+    global cobol_ls
+    global program_id
+    for i in cobol_ls:
+        if i == 'PROGRAM-ID':
+            j = cobol_ls.index(i) + 1
+            program_id = cobol_ls[j]
 
 # Execute Program
 
@@ -59,10 +75,11 @@ if __name__ == "__main__":
     in_file = findCobFile() # Optional. Can be toggled with the line below. 
     # in_file = getFileFromUser() # Optional. Turned off for testing.
     read_cobol_file(in_file=in_file)
-    cobol_list = parseCobol()
-    out_name = in_file[:-4]
-    out_file_name = "{}.py".format(out_name) # Change to program_id
+    parseCobol() # I can probably combine these functions... 
+    cleanCobolLs()
+    getProgramName()
+    out_file_name = "{}.py".format(program_id)
     out_file = os.path.join(cpath, out_file_name)
     with open(out_file, "w") as f:
-        for i in cobol_list:
+        for i in cobol_ls:
             f.write(i)
