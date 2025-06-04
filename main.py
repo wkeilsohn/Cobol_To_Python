@@ -6,6 +6,7 @@ import os
 from bs4 import BeautifulSoup
 import numpy as np
 import pandas as pd
+import re
 
 # Testing Only
 from time import sleep
@@ -16,8 +17,8 @@ pos_ans = 'YES'
 cobol_text = ''
 cobol_ls = [] # Maybe? 
 program_id = ''
-working_storage_section = []
-procedure_division = []
+working_storage_section = ''
+procedure_division = ''
 
 
 # Define Functions
@@ -53,9 +54,6 @@ def parseCobol():
     global cobol_ls
     cobol_ls = cobol_text.split('.')
 
-def getProgramName():
-    global cobol_commands
-
 def cleanCobolLs():
     global cobol_ls
     cobol_ls = [x.lstrip() for x in cobol_ls]
@@ -69,6 +67,21 @@ def getProgramName():
             j = cobol_ls.index(i) + 1
             program_id = cobol_ls[j]
 
+def getWS():
+    global cobol_text
+    global cobol_ls
+    global working_storage_section
+    tmp_txt = ''
+    for i in cobol_ls:
+        tmp_txt = tmp_txt + i
+    cobol_text = tmp_txt
+    working_storage_section = re.findall(r'WORKING-STORAGE SECTION(.*?)PROCEDURE DIVISION', cobol_text)[0]
+
+def getPD():
+    global cobol_text
+    global procedure_division
+    procedure_division = re.findall(r'PROCEDURE DIVISION(.*?)STOP RUN', cobol_text)[0]
+
 # Execute Program
 
 if __name__ == "__main__":
@@ -78,6 +91,8 @@ if __name__ == "__main__":
     parseCobol() # I can probably combine these functions... 
     cleanCobolLs()
     getProgramName()
+    getWS()
+    getPD()
     out_file_name = "{}.py".format(program_id)
     out_file = os.path.join(cpath, out_file_name)
     with open(out_file, "w") as f:
