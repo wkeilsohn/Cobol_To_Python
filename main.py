@@ -20,7 +20,6 @@ program_id = ''
 working_storage_section = ''
 procedure_division = ''
 
-
 # Define Functions
 
 def checkUser(user_answer):
