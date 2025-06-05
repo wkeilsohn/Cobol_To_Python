@@ -3,9 +3,6 @@
 
 # Import Packages
 import os
-from bs4 import BeautifulSoup
-import numpy as np
-import pandas as pd
 import re
 
 # Testing Only
@@ -121,14 +118,11 @@ def getWS():
     tmp_txt = " ".join(cobol_text.split('\n'))
     working_storage_section = re.findall(r'WORKING-STORAGE SECTION\.(.*?)PROCEDURE DIVISION\.', tmp_txt)[0]
 
-
-
 def getPD():
     global cobol_text
     global procedure_division
     tmp_txt = " ".join(cobol_text.split('\n'))
     procedure_division = re.findall(r'PROCEDURE DIVISION\.(.*?)STOP RUN\.', tmp_txt)[0]
-
 
 def startFile(run_file_name, start_value=False):
     if start_value == True:
