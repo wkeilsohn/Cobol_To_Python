@@ -49,11 +49,6 @@ def read_cobol_file(in_file):
     with open(in_file) as f:
         cobol_text = f.read()
 
-# def parseCobol():
-#     global cobol_text
-#     global cobol_ls
-#     cobol_ls = cobol_text.split('.')
-
 def cleanCobolLs():
     global cobol_ls
     global cobol_text
@@ -76,16 +71,17 @@ def assignWSS(ws_value): # Expand upon later
         pass # Add Later
     else:
         var_name = re.search(r' (.*?)PIC', ws_value)[0][:-3]
+        var_name = var_name.lstrip()
         var_value = re.search(r'(?<= VALUE).+', ws_value)
         if var_value is None:
             var_value = 0
         elif var_value[0] == 'VALUE':
             var_value = 0
-        elif var_value[0] in "ZEROS":
+        elif "ZERO" in var_value[0]:
             var_value = 0
         else:
             var_value = var_value[0]
-        tmp_str = str(var_name) + ' = ' + str(var_value)
+        tmp_str = str(var_name) + '= ' + str(var_value)
     return tmp_str 
 
 # def buildPD(func_core, function_name): # Add Later. This is a good idea, but not yet needed.
@@ -94,25 +90,27 @@ def assignWSS(ws_value): # Expand upon later
 def buildCMD(cmd_core):
     cmd_value = ""
     if 'MOVE' in cmd_core:
-        cn_value = re.search(r'MOVE (.*?) TO', cmd_core)[0]
-        cv_value = re.search(r'(?<=TO ).+', cmd_core)[0][-3:]
-        cmd_value = str(cv_value) + " = " + str(cn_value) 
+        cn_value = re.findall(r'\d+', cmd_core)[0]
+        cv_value = re.search(r'(?<= TO ).+', cmd_core)[0]
+        cmd_value = str(cv_value) + " = " + str(cn_value)
     elif 'DISPLAY' in cmd_core:
         cv_value = re.search(r'(?<=DISPLAY ).+', cmd_core)[0]
         cmd_value = "print(" + str(cv_value) + ")" 
     elif 'STRING' in cmd_core:
-        c1_value = re.search(r'STRING (.*?) DELIMITED', cmd_core)[0]
+        c1_value = re.findall(r'STRING (.*?) DELIMITED', cmd_core)[0]
         if 'SPACE' in cmd_core:
-            cm_value = ' '
-            c2_value = re.search(r'SPACE(.*?) DELIMITED', cmd_core)[0]
+            cm_value = '" "'
+            c2_value = re.findall(r'SPACE (.*?) DELIMITED', cmd_core)[0].lstrip()
         else:
             cm_value = ''
-            c2_value = re.search(r'SIZE(.*?) DELIMITED', cmd_core)[0]
-        cmd_value = str(c1_value) + str(cm_value) + c2_value # Can and should be expanded upon. 
+            c2_value = re.findall(r'SIZE(.*?) DELIMITED', cmd_core)[0]
+        c3_value = re.search(r'(?<=INTO ).+', cmd_core)[0].lstrip()
+        cmd_value = str(c3_value) + '=' + str(c1_value)\
+            + "+" + str(cm_value)+ "+" + c2_value # Can and should be expanded upon. 
     elif 'COMPUTE' in cmd_core:
         cmd_core = cmd_core.replace("EQUALS", "=")
-        eq_value = re.search(r'\= (.*?)', cmd_core)[0]
-        cv_value = re.search(r'COMPUTE (.*?) \=', cmd_core)[0]
+        eq_value = re.search(r'(?<=\=).+', cmd_core)[0]
+        cv_value = re.findall(r'COMPUTE (.*?) \=', cmd_core)[0]
         cmd_value = str(cv_value) + " = " + eq_value
     else:
         pass # A lot more to expand upon...
@@ -137,9 +135,6 @@ def startFile(run_file_name, start_value=False):
     if start_value == True:
         os.system("python {}".format(run_file_name))
 
-
-# def createRunCommand():
-
 def wsToVariables():
     global working_storage_section
     tmp_vals = ''
@@ -150,11 +145,20 @@ def wsToVariables():
 
 def pdTofunctions():
     global procedure_division
-    tmp_vals = ''
+    tmp_vals = []
     pd_ls = procedure_division.split('.')
     for i in pd_ls:
-        tmp_vals = tmp_vals + '\n' + buildCMD(i)
+        tmp_vals.append(buildCMD(i))
     procedure_division = tmp_vals
+
+def createRunCommand():
+    global procedure_division
+    run_command = ""
+    spacer = "    "
+    run_command = run_command + 'if __name__ == "__main__":'
+    for i in procedure_division:
+        run_command = run_command + "\n" + spacer + i
+    return run_command
 
 # Execute Program
 
@@ -162,16 +166,17 @@ if __name__ == "__main__":
     in_file = findCobFile() # Optional. Can be toggled with the line below. 
     # in_file = getFileFromUser() # Optional. Turned off for testing.
     read_cobol_file(in_file=in_file)
-    # parseCobol() # I can probably combine these functions... 
     cleanCobolLs()
     getProgramName()
     getWS()
     wsToVariables()
     getPD()
     pdTofunctions()
+    start_func = createRunCommand()
     out_file_name = "{}.py".format(program_id)
     out_file = os.path.join(cpath, out_file_name)
     with open(out_file, "w") as f:
         f.write(working_storage_section)
-        f.write(procedure_division)
+        f.write("\n")
+        f.write(start_func)
     startFile(run_file_name=out_file) # Toggle On / Off
